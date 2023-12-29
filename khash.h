@@ -212,6 +212,23 @@ static const double __ac_HASH_UPPER = 0.77;
 	extern khint_t kh_put_##name(kh_##name##_t *h, khkey_t key, int *ret); \
 	extern void kh_del_##name(kh_##name##_t *h, khint_t x);
 
+
+#define KHASH_IMPLEMENT_STR_N_GET(name)					\
+static kh_inline khint_t kh_nget_##name(const kh_##name##_t *h, kh_cstr_t key, size_t num) \
+{									\
+	if (h->n_buckets) {						\
+		khint_t k, i, last, mask, step = 0;			\
+		mask = h->n_buckets - 1;				\
+		k = __ac_X31_hash_n_string(key, num); i = k & mask;	\
+		last = i;						\
+		while (!__ac_isempty(h->flags, i) && (__ac_isdel(h->flags, i) || strncmp(h->keys[i], key, num))) { \
+			i = (i + (++step)) & mask;			\
+			if (i == last) return h->n_buckets;		\
+		}							\
+		return __ac_iseither(h->flags, i)? h->n_buckets : i;	\
+	} else return 0;						\
+}
+
 #define __KHASH_IMPL(name, SCOPE, khkey_t, khval_t, kh_is_map, __hash_func, __hash_equal) \
 	SCOPE kh_##name##_t *kh_init_##name(void) {							\
 		return (kh_##name##_t*)kcalloc(1, sizeof(kh_##name##_t));		\
@@ -402,6 +419,14 @@ static kh_inline khint_t __ac_X31_hash_string(const char *s)
 	if (h) for (++s ; *s; ++s) h = (h << 5) - h + (khint_t)*s;
 	return h;
 }
+static kh_inline khint_t __ac_X31_hash_n_string(const char *s, size_t n)
+{
+	khint_t h = (khint_t)*s, i = 1;
+	if (h) for (++s ; *s && i < n; ++s, ++i) h = (h << 5) - h + (khint_t)*s;
+	return h;
+}
+
+
 /*! @function
   @abstract     Another interface to const char* hash function
   @param  key   Pointer to a null terminated string [const char*]
