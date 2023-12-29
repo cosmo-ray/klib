@@ -125,9 +125,13 @@ int main() {
 
 #define AC_VERSION_KHASH_H "0.2.8"
 
+#ifndef kn_no_include
+
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+
+#endif
 
 /* compiler specific configuration */
 
